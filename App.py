@@ -27,6 +27,6 @@ if prompt := st.chat_input("Talk to Emma..."):
         system=PERSONALITY,
         messages=st.session_state.messages,
     )
-    text = reply.content[0].text
+    text = reply.content[-1].text
     st.session_state.messages.append({"role": "assistant", "content": text})
     st.chat_message("assistant").write(text)
