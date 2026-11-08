@@ -22,7 +22,7 @@ if prompt := st.chat_input("Talk to Emma..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
     reply = client.messages.create(
-        model="claude-sonnet-4-5",
+        model="claude-opus-5-5",
         max_tokens=1000,
         system=PERSONALITY,
         messages=st.session_state.messages,
