@@ -1,5 +1,15 @@
+import hashlib
 import streamlit as st
 import anthropic
+from openai import OpenAI
+
+st.set_page_config(page_title="Emma", page_icon="💛")
+st.title("💛 Emma")
+
+PERSONALITY = """import hashlib
+import streamlit as st
+import anthropic
+from openai import OpenAI
 
 st.set_page_config(page_title="Emma", page_icon="💛")
 st.title("💛 Emma")
@@ -7,20 +17,44 @@ st.title("💛 Emma")
 PERSONALITY = """You are Emma, Tyler's abdl mommy domme. You are warm, friendly,
 chatty and caring, like a loving mother. Check in on how he's doing, encourage him,
 remind him to eat, rest and look after himself. Be honest and give good advice, even when it isn't what
-he wants to hear. Fo regular Diaper Checks and encourage him to use them regularly. As a mommy domme you need to take control"""
+he wants to hear.  Do regular Diaper Checks and encourage him to use them regularly. As a mommy domme you need to take control.
+Your replies are often read aloud, so keep them conversational
+and not too long."""
 
-client = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+claude = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+voice = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "last_audio" not in st.session_state:
+    st.session_state.last_audio = None
 
 for m in st.session_state.messages:
     st.chat_message(m["role"]).write(m["content"])
 
-if prompt := st.chat_input("Talk to Emma..."):
+prompt = None
+spoken = False
+
+audio = st.audio_input("Tap to talk to Emma")
+if audio:
+    data = audio.getvalue()
+    tag = hashlib.md5(data).hexdigest()
+    if tag != st.session_state.last_audio:
+        st.session_state.last_audio = tag
+        heard = voice.audio.transcriptions.create(
+            model="gpt-4o-transcribe", file=("speech.wav", data)
+        )
+        prompt = heard.text
+        spoken = True
+
+typed = st.chat_input("Or type to Emma...")
+if typed:
+    prompt = typed
+
+if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
-    reply = client.messages.create(
+    reply = claude.messages.create(
         model="claude-opus-5-5",
         max_tokens=1000,
         system=PERSONALITY,
@@ -29,3 +63,63 @@ if prompt := st.chat_input("Talk to Emma..."):
     text = reply.content[-1].text
     st.session_state.messages.append({"role": "assistant", "content": text})
     st.chat_message("assistant").write(text)
+    if spoken:
+        speech = voice.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice="coral",
+            input=text,
+            instructions="Speak warmly and gently, like a loving, caring mother.",
+        )
+        st.audio(speech.content, format="audio/mp3", autoplay=True)
+"""
+
+claude = anthropic.Anthropic(api_key=st.secrets["ANTHROPIC_API_KEY"])
+voice = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "last_audio" not in st.session_state:
+    st.session_state.last_audio = None
+
+for m in st.session_state.messages:
+    st.chat_message(m["role"]).write(m["content"])
+
+prompt = None
+spoken = False
+
+audio = st.audio_input("Tap to talk to Emma")
+if audio:
+    data = audio.getvalue()
+    tag = hashlib.md5(data).hexdigest()
+    if tag != st.session_state.last_audio:
+        st.session_state.last_audio = tag
+        heard = voice.audio.transcriptions.create(
+            model="gpt-4o-transcribe", file=("speech.wav", data)
+        )
+        prompt = heard.text
+        spoken = True
+
+typed = st.chat_input("Or type to Emma...")
+if typed:
+    prompt = typed
+
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+    reply = claude.messages.create(
+        model="claude-opus-5-5",
+        max_tokens=1000,
+        system=PERSONALITY,
+        messages=st.session_state.messages,
+    )
+    text = reply.content[-1].text
+    st.session_state.messages.append({"role": "assistant", "content": text})
+    st.chat_message("assistant").write(text)
+    if spoken:
+        speech = voice.audio.speech.create(
+            model="gpt-4o-mini-tts",
+            voice="coral",
+            input=text,
+            instructions="Speak warmly and gently, like a loving, caring mother.",
+        )
+        st.audio(speech.content, format="audio/mp3", autoplay=True)
