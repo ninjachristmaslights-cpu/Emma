@@ -57,8 +57,8 @@ if prompt:
     if spoken:
         speech = voice.audio.speech.create(
             model="gpt-4o-mini-tts",
-            voice="coral",
+            voice="shimmer",
             input=text,
-            instructions="Speak warmly and gently, like a loving, caring mother.",
+            instructions="Speak softly, slowly and sweetly, in a gentle, soothing and caring tone.",
         )
         st.audio(speech.content, format="audio/mp3", autoplay=True)
